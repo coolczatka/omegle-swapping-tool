@@ -1,6 +1,7 @@
 from selenium import webdriver
 import dictionary
 import time
+from selenium import common
 import re
 import datetime
 
@@ -14,16 +15,16 @@ class messageRow():
 
 
 class Client():
-    def __init__(self,name):
+    def __init__(self,name,driver):
         self.name = name
-        self.driver = webdriver.Firefox()
+        self.driver = driver
         self.driver.get("https://www.omegle.com/")
         textButton = self.driver.find_element_by_id("textbtn")
         textButton.click()
-        self.disconnBtn = self.driver.find_element_by_class_name("disconnectbtn")
         self.dc = False
         self.messages = []
         self.hms=0
+        self.disconnBtn = self.driver.find_element_by_class_name("disconnectbtn")
         self.textarea = self.driver.find_element_by_class_name('chatmsg')
         self.sendbtn = self.driver.find_element_by_class_name('sendbtn')
     def loadMessages(self):
@@ -31,9 +32,8 @@ class Client():
             self.messages = []
             logbox = self.driver.find_elements_by_class_name("strangermsg")
             regex = re.compile("^Stranger: ")
-            end = re.compile('Stranger has disconnected')
             for i in logbox:
-                if(end.match(i.text)):
+                if(self.checkDc()):
                     self.dc = True
                     break
                 if(not regex.match(i.text)):
@@ -52,13 +52,24 @@ class Client():
         if text=="" or text==None:
             return
         while(not self.textarea.is_enabled()):
-            pass
+            self.textarea = self.driver.find_element_by_class_name('chatmsg')
         self.textarea.clear()
         self.textarea.send_keys(text)
         self.sendbtn.click()
     def reroll(self):
-        self.disconnBtn.click()
+        if self.dc:
+            self.disconnBtn.click()
+        else:
+            self.disconnBtn.click()
+            self.disconnBtn.click()
+            self.disconnBtn.click()
         self.dc = False
+    def checkDc(self):
+        try:
+            self.driver.find_element_by_class_name("newchatbtnwrapper")
+        except common.exceptions.NoSuchElementException:
+            return False
+        return True
 
 def fun(x):
         return x.time
@@ -66,8 +77,10 @@ def fun(x):
 
 class Conn():
     def __init__(self, nameClient1, nameClient2):
-        self.c1 = Client(nameClient1)
-        self.c2 = Client(nameClient2)
+        d1 = webdriver.Firefox("www.omegle.com")
+        d2 = webdriver.Firefox("www.omegle.com")
+        self.c1 = Client(nameClient1,d1)
+        self.c2 = Client(nameClient2,d2)
         self.conversation = []
         self.sendCount = 0
 
@@ -100,7 +113,7 @@ class Conn():
     def reroll(self):
         self.c1.reroll()
         self.c2.reroll()
-        self.conversation.append("------------------------------------------")
+        self.conversation.append(messageRow("------------------------------------------",""))
 
     def __del__(self):
         try:
@@ -113,20 +126,10 @@ class Conn():
     def isDc(self):
         return self.c1.dc or self.c2.dc
 
+con = Conn("S","M")
 
 
-#driver = webdriver.Firefox()
-#driver.get("https://www.omegle.com/")
-#textButton = driver.find_element_by_id("textbtn")
-#textButton.click()
-
-con = Conn("Seba","Mati")
-#regex = re.compile("^Stranger: ")
-#if regex.match('Stranger is typing...'):
-#    print("nd")
-#else:
-#    print('d')
-while True:
+for i in range(10):
     while(not con.isDc()):
         con.run()
 
