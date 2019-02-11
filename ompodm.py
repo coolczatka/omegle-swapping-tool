@@ -1,5 +1,6 @@
 from selenium import webdriver
 import dictionary
+import threading
 import time
 from selenium import common
 import re
@@ -18,9 +19,6 @@ class Client():
     def __init__(self,name,driver):
         self.name = name
         self.driver = driver
-        self.driver.get("https://www.omegle.com/")
-        textButton = self.driver.find_element_by_id("textbtn")
-        textButton.click()
         self.dc = False
         self.messages = []
         self.hms=0
@@ -76,9 +74,17 @@ def fun(x):
 
 
 class Conn():
+    #TODO: StaleElementReferenceException at reconnect
     def __init__(self, nameClient1, nameClient2):
-        d1 = webdriver.Firefox("www.omegle.com")
-        d2 = webdriver.Firefox("www.omegle.com")
+        d1 = webdriver.Firefox()
+        d2 = webdriver.Firefox()
+        d1.get("https://www.omegle.com/")
+        d2.get("https://www.omegle.com/")
+        textButton1 = d1.find_element_by_id("textbtn")
+        textButton1.click()
+        textButton2 = d2.find_element_by_id("textbtn")
+        textButton2.click()
+
         self.c1 = Client(nameClient1,d1)
         self.c2 = Client(nameClient2,d2)
         self.conversation = []
@@ -111,6 +117,7 @@ class Conn():
         self.sendSwapped()
 
     def reroll(self):
+
         self.c1.reroll()
         self.c2.reroll()
         self.conversation.append(messageRow("------------------------------------------",""))
